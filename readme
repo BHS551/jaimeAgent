@@ -1,0 +1,122 @@
+# Jaime Agent
+
+**Jaime** is a lightweight, function‑calling agent that leverages OpenAI’s GPT‑4o‑mini (or any compatible Chat Completion model) to read, analyse and update source files *and* issue safe shell commands on your local machine.
+
+---
+
+## ✨ Features
+
+| Capability         | Details                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| Autonomous editing | Reads / writes any UTF‑8 text file (`read_file`, `write_file`).                                   |
+| Command execution  | Runs whitelisted shell commands through `run_cmd` (you can extend or sandbox).                    |
+| Two‑phase safety   | 1️⃣ **Validation** – model plans and validates; 2️⃣ **Execution** – function calls dispatched.    |
+| Memory             | Flat JSON log (`session_memory.json`) of each exchange – reset on every run for full determinism. |
+| Extensible tools   | Add any function (tool) by editing `function_schema.py` and dropping a handler into `handlers/`.  |
+
+---
+
+## 🏗️ Project Layout
+
+```text
+.
+├── jaime_agent.py          # CLI entry‑point
+├── client.py               # Core driver (context, memory, 2‑phase loop)
+├── config.py               # API key & model selection
+├── function_schema.py      # Declarative tool list (JSON schema style)
+├── prevalidations.py       # Optional hard validation rules
+├── session_memory.json     # Conversation memory (auto‑reset each run)
+└── handlers/               # One module per tool
+    ├── append_json.py
+    ├── dispatch.py         # Generic dispatcher → handler
+    ├── read_file.py
+    ├── write_file.py
+    └── ... (add yours here)
+```
+
+---
+
+## 🚀 Quickstart
+
+```bash
+# 1. Clone & create venv (Python ≥ 3.10 recommended)
+git clone https://github.com/your‑org/jaime‑agent.git
+cd jaime‑agent
+python -m venv .venv && source .venv/bin/activate  # windows: .venv\Scripts\activate
+
+# 2. Install deps
+pip install -r requirements.txt  # or just: pip install openai
+
+# 3. Set your OpenAI key (and optional model override)
+export OPENAI_API_KEY="sk‑..."
+export OPENAI_MODEL="gpt‑4o-mini"  # default is already this
+
+# 4. Run Jaime
+python jaime_agent.py
+```
+
+Once inside the REPL, try:
+
+```text
+> read_file ./README.md
+> write_file ./todo.md "• add unit tests\n"
+> run_cmd "pytest -q"
+```
+
+---
+
+## 🛠️ Adding a New Tool
+
+1. **Define it** in `function_schema.py`:
+
+```python
+{
+  "name": "list_dir",
+  "description": "Return a recursive listing of a directory",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "path": {"type": "string"}
+    },
+    "required": ["path"]
+  }
+}
+```
+
+2. **Implement** `handlers/list_dir.py`:
+
+```python
+def handle(path: str):
+    import pathlib, json
+    files = [str(p) for p in pathlib.Path(path).rglob("*")]
+    return json.dumps(files, indent=2)
+```
+
+That’s it – the dispatcher picks it up automatically.
+
+---
+
+## 🔒 Security Tips
+
+* **Sandbox commands** – run inside Docker/Firecracker or keep a strict allow‑list.
+* **Version control** – commit before letting Jaime overwrite files.
+* **Key hygiene** – never hard‑code your `OPENAI_API_KEY`; use env‑vars or a secrets manager.
+
+---
+
+## 🗺️ Roadmap
+
+* [ ] Configurable memory retention (days / size)
+* [ ] Git integration tool (`git_diff`, `git_commit`)
+* [ ] VS Code extension wrapper
+* [ ] Web dashboard with LangSmith tracing
+
+---
+
+## 📄 License
+
+MIT – see `LICENSE` for details.
+
+---
+
+*Made with ♥ and large language models, June 2025.*
