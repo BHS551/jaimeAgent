@@ -2,7 +2,7 @@ import os
 import sys
 
 # Load API credentials and model name from environment
-defined_api_key = "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"
+defined_api_key = os.getenv('OPENAI_API_KEY')
 if not defined_api_key:
     sys.exit("ERROR: Please set the OPENAI_API_KEY environment variable.")
 OPENAI_API_KEY = defined_api_key

@@ -4,6 +4,9 @@ import os
 import sys
 import argparse
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Ensure import path when run from Startup folder
 MODULE_DIR = os.path.expanduser("~/Documents/loneProjects/JaimeAgent/scripts")
 if os.path.isdir(MODULE_DIR) and MODULE_DIR not in sys.path:

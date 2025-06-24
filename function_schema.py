@@ -28,14 +28,11 @@ FUNCTIONS = [
     },
     {
         "name": "read_file",
-        "description": "Read and return the full contents of a text file",
+        "description": "Read a text file or list all files in a directory",
         "parameters": {
             "type": "object",
             "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Path to the file to read (supports ~ for home)"
-                }
+            "path": {"type": "string"}
             },
             "required": ["path"]
         }
@@ -57,5 +54,38 @@ FUNCTIONS = [
             },
             "required": ["path", "instructions"]
         }
+    },
+    {
+        "name": "git_add",
+        "description": "Stage all changes in the specified folder for commit",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "folder_path": {"type": "string", "description": "Path of the folder to stage changes"}
+            },
+            "required": ["folder_path"]
         }
+    },
+    {
+        "name": "git_commit",
+        "description": "Commit staged changes to the local git repository",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "commit_message": {"type": "string", "description": "Commit message for the changes"},
+            },
+            "required": ["commit_message"]
+        }
+    },
+    {
+        "name": "git_push",
+        "description": "Handles the git push event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "folder_path": {"type": "string", "description": "The name of the branch to push"}
+            },
+            "required": ["branch_name", "remote"]
+        }
+    }
 ]
