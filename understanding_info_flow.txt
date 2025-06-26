@@ -1,0 +1,1 @@
+Objective: Enhance understanding of information flow as an AI agent, focusing on awareness of source code and intelligence. Steps to achieve this include documenting processes, algorithms, and insights. Future revisions will be based on new experiences and learning from interactions.

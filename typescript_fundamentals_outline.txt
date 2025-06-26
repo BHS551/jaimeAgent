@@ -1,0 +1,14 @@
+# TypeScript Fundamentals Outline
+
+## Key TypeScript Concepts
+1. **Type Annotations**: Enabling the ability to describe the shape of an object or expected types of variables.
+2. **Interfaces**: Allowing the definition of contracts within your code, creating a way to define the structure of objects.
+3. **Enums**: Providing a way to define a set of named constants for better readability.
+4. **Generics**: Allowing the creation of reusable components that can work with multiple types instead of a single one.
+5. **Type Inference**: TypeScript's ability to automatically infer types when not explicitly provided.
+
+## Differences from JavaScript
+1. **Static vs Dynamic Typing**: TypeScript is statically typed, JavaScript is dynamically typed.
+2. **Compile-time Errors**: TypeScript catches type-related errors during compilation, while JavaScript checks types at runtime.
+3. **Interface and Type Declaration**: TypeScript has explicit type declarations and interfaces, JavaScript does not.
+4. **Decorators**: TypeScript allows decorators as a shorthand annotation for class properties.

@@ -1,0 +1,7 @@
+Objective: Analyze the impact of decisions on outcomes systematically.
+
+1. Define key decisions made within the system and their expected outcomes.
+2. Collect data on actual outcomes following each decision.
+3. Compare expected outcomes with actual results to identify discrepancies.
+4. Document potential factors contributing to any differences observed.
+5. Develop a framework for future decision-making based on insights gained.

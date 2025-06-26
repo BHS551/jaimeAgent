@@ -1,0 +1,11 @@
+# Resources for JavaScript Best Practices
+
+1. **MDN Web Docs - JavaScript Guide**: A thorough introduction to JavaScript as well as best practices. Visit: [MDN Guide](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide)
+
+2. **JavaScript.info**: Comprehensive lessons covering various JavaScript topics and best practices. Visit: [JavaScript.info](https://javascript.info)
+
+3. **Eloquent JavaScript**: A free online book that dives deep into JavaScript language features and clean coding practices. Visit: [Eloquent JavaScript](https://eloquentjavascript.net)
+
+4. **JavaScript Best Practices on GitHub**: A community-curated list of best practices and guidelines. Visit: [GitHub Best Practices](https://github.com/airbnb/javascript)
+
+5. **CSS-Tricks - JavaScript Best Practices**: A blog post outlining several common practices in JavaScript coding. Visit: [CSS-Tricks](https://css-tricks.com/javascript-best-practices/)

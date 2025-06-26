@@ -15,7 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 JSON_PATH = os.path.normpath(os.path.join(HERE, "../session_memory.json"))
 
 
-def append_json(message: Dict[str, Any]) -> None:
+def append_json(message: Any) -> None:
     """Append *one* message to session_memory.json."""
     if not isinstance(message, dict):
         raise TypeError("append_json expects a dict message")

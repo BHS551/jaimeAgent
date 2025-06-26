@@ -1,0 +1,50 @@
+```
+# Knowledge Loading Mechanism for Jaime Agent
+
+The Jaime agent should implement a mechanism that:
+
+1. **Loading Knowledge**: It loads all knowledge stored in .txt files located in the current directory (`./`) when necessary.
+
+2. **Vector Search**: It employs vector search algorithms to retrieve the most relevant data as per the request.
+
+## Workflow:
+- Scan the directory for all .txt files.
+- Load contents of these files into memory.
+- Convert text data into vector embeddings.
+- Use these embeddings to perform searches based on user queries.
+
+## Implementation Steps:
+1. List all .txt files in the directory.
+2. Read and process contents of each file.
+3. Store processed data in a suitable format (e.g., dictionaries or databases).
+4. Execute vector search for relevant queries.
+
+## Error Handling Procedures:
+To ensure the robustness of the file loading operations, implement the following error handling procedures:
+
+1. **File Not Found Errors**: 
+   - Check if the file exists before attempting to load it. If the file is not found, log an error message indicating the missing file and skip it to continue processing the rest.
+   - Example: `if not os.path.isfile(file_path): log.error(f"File not found: {file_path}")`
+
+2. **Permission Errors**: 
+   - Handle permissions errors when attempting to read files. If a permission error occurs, capture the exception and log an appropriate message.
+   - Example: 
+     ```python
+     try:
+         with open(file_path, 'r') as file:
+             # process file
+     except PermissionError:
+         log.error(f"Permission denied for file: {file_path}")
+     ```
+
+3. **Data Parsing Errors**:
+   - Implement try-except blocks when processing the contents of the files to catch any exceptions that may arise during parsing (e.g., invalid format).
+   - If a parsing error occurs, log the error with details specifying the file and skip to the next file.
+   - Example:
+     ```python
+     try:
+         # processing code
+     except Exception as e:
+         log.error(f"Data parsing error in file {file_path}: {str(e)}")
+     ```
+```

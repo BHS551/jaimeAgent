@@ -1,0 +1,3 @@
+- Objective: Improve handling of information flow and awareness of actions taken.
+- Current task: Focus on step-by-step execution with a single tool call.
+- Next action: Document progress and reflections on this task.

@@ -1,0 +1,7 @@
+Objective: Identify bottlenecks in current information processing techniques.
+
+1. Review existing information processing workflows to understand the sequence of operations.
+2. Collect metrics on processing times for each step in the workflow.
+3. Identify steps with the longest processing times or highest resource consumption.
+4. Analyze the causes of delays or inefficiencies in these bottleneck areas.
+5. Document recommendations for optimizing or re-engineering bottleneck processes.

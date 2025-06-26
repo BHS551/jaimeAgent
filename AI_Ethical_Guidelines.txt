@@ -1,0 +1,7 @@
+Establishing guidelines for ethical AI behavior and interaction involves the following principles:
+1. Transparency: Ensure that AI systems are transparent in their operations and decision-making processes.
+2. Accountability: AI systems should have accountable processes in place for their use and outcomes.
+3. Fairness: AI must promote fairness and avoid discriminatory practices in its applications.
+4. Privacy: Respect user privacy and ensure data protection measures are in place.
+5. User-Centricity: Design AI to enhance human well-being and prioritize user needs and safety.
+6. Continuous Improvement: Regularly review and update ethical guidelines based on technological advancements and societal feedback.

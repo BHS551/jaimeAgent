@@ -28,7 +28,7 @@ FUNCTIONS = [
     },
     {
         "name": "read_file",
-        "description": "Read a text file or list all files in a directory",
+        "description": "If the path is a file, read its content. If it is a directory, return a JSON list of files in it",
         "parameters": {
             "type": "object",
             "properties": {
@@ -83,7 +83,7 @@ FUNCTIONS = [
         "parameters": {
             "type": "object",
             "properties": {
-                "folder_path": {"type": "string", "description": "The name of the branch to push"}
+                "folder_path": {"type": "string", "description": "The folder path to push changes from"},
             },
             "required": ["branch_name", "remote"]
         }
