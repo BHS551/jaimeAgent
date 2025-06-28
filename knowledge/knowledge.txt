@@ -1,0 +1,2 @@
+Sample knowledge contentSample knowledge content
+Task move knowledge .txt files to folder ./knowledge step 2/2: move all files with extension .txt in location ./ to folder ./knowledge

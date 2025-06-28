@@ -189,3 +189,10 @@ def handle_prompt(prompt: str, context: Optional[str] = None) -> str:
 
     return (msg.get("content") if isinstance(msg, dict)
             else msg.content or "No action taken")
+import glob
+
+knowledge_files = glob.glob('./knowledge/*.txt')
+for file in knowledge_files:
+    with open(file, 'r') as f:
+        knowledge = f.read()
+        # Process knowledge as needed

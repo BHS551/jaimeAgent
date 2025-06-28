@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # jaime_agent.py
 import os
@@ -22,9 +23,11 @@ TASK_FILE = PROJECT_DIR / "tasks.json"
 FEEDBACK_FILE = PROJECT_DIR / "user_feedback.txt"
 DECISION_IMPACT_FILE = PROJECT_DIR / "decision_impact_analysis.txt"
 FLOWS_FILE = PROJECT_DIR / "git_flows.json"
+KNOWLEDGE_DIR = PROJECT_DIR / "knowledge"
 
 # Ensure project directories exist
 PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+KNOWLEDGE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Ensure import path when run from Startup folder
 MODULE_DIR = os.path.expanduser("~/Documents/loneProjects/JaimeAgent/scripts")
@@ -97,6 +100,16 @@ def load_reference_docs(objective: str) -> str:
                 monitor_information_flow("load_reference_docs", full.name)
             except Exception:
                 logging.error(f"Error reading {full}")
+    
+    # Load all .txt files from the knowledge directory
+    for txt_file in KNOWLEDGE_DIR.glob("*.txt"):
+        try:
+            text = txt_file.read_text(encoding='utf-8')
+            parts.append(f"== {txt_file.name} ==\n{text}")
+            monitor_information_flow("load_reference_docs", txt_file.name)
+        except Exception:
+            logging.error(f"Error reading {txt_file}")
+
     return "\n\n".join(parts)
 
 # Git flows
