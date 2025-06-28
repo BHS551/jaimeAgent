@@ -1,18 +1,13 @@
 [
   {
-    "id": "create-new--git-pull-functionality",
+    "id": "git_push_jaime_git_control",
     "steps": [
-      "Define the Purpose: Identify the specific functionality needed and its objective. Clearly articulate what this new functionality should accomplish.",
-      "Document Requirements: Gather and document the requirements for the new functionality. This includes inputs, outputs, and behavior expected from the functionality.",
-      "Plan the Structure: Determine the overall structure of the new functionality. This may include deciding if it's a standalone function, part of a class, or an integration with existing features.",
-      "Update function_schema.py: In the `./function_schema.py` file, push a new item to the FUNCTIONS array, indicating the new function schema, follow the same format thats used in the other elements of the array. Include detailed comments explaining its purpose and parameters.",
-      "Implement the Handler: In the `/handlers` folder, create a new handler script (if required) for the operation. Ensure that it properly invokes the function defined in the previous step.",
-      "Testing: Develop unit tests for the new functionality. Ensure it handles expected inputs and edge cases. Adapt existing tests if necessary to accommodate the new functionality.",
-      "Integrate with Existing System: If the new functionality interacts with other parts of the system, ensure that those connections are in place and functioning correctly.",
-      "Update Documentation: Ensure that all relevant documentation is updated to include information about the new functionality. This includes comments in the code, as well as any external documentation the project may require.",
-      "Review and Iterate: Have peers review the new functionality, provide feedback, and iterate on improvements as necessary.",
-      "Deploy: Once fully tested and reviewed, deploy the changes to the production environment, ensuring everything works as intended."
+      "run git add in path ./",
+      "run git diff in path ./ and define a message for the commit",
+      "run git commit with the just defined message for path ./ starting with 'JAIME-BOT'",
+      "run git pull rebase origin in path ./",
+      "run git push in path ./"
     ],
-    "current_step": 9
+    "current_step": 0
   }
 ]

@@ -73,8 +73,9 @@ FUNCTIONS = [
             "type": "object",
             "properties": {
                 "commit_message": {"type": "string", "description": "Commit message for the changes"},
+                "folder_path": {"type": "string", "description": "The folder path to commit changes from"},
             },
-            "required": ["commit_message"]
+            "required": ["commit_message", "folder_path"]
         }
     },
     {
@@ -85,25 +86,34 @@ FUNCTIONS = [
             "properties": {
                 "folder_path": {"type": "string", "description": "The folder path to push changes from"},
             },
-            "required": ["branch_name", "remote"]
+            "required": ["folder_path"]
+        }
+    },
+    {
+        "name": "git_diff",
+        "description": "Show git diff between local changes and the remote HEAD for the current branch",
+        "parameters": {
+            "type": "object",
+            "properties": {
+            "folder_path": {
+                "type": "string",
+                "description": "Path of the Git repository to diff"
+            }
+            },
+            "required": ["folder_path"]
         }
     }
-]# New function schema for the git pull functionality
+]
+# New function schema for the git pull functionality
 FUNCTIONS.append({
-    "name": "perform_git_pull",
+    "name": "git_pull",
     "description": "Handles the git pull operation to fetch updates from a remote repository",
     "parameters": {
-        "repository_url": {"type": "string", "description": "The URL of the remote Git repository to pull updates from."},
-        "local_dir": {"type": "string", "description": "The path to the local directory where the repository is cloned."},
-        "auth_credentials": {"type": "object", "description": "Any credentials required for accessing the remote repository, if applicable."}
-    },
-    "outputs": {
-        "update_log": {"type": "string", "description": "Log of the changes retrieved from the remote repository, indicating which files were updated, added, or removed."},
-        "success_message": {"type": "string", "description": "Message indicating whether the pull operation succeeded or failed."}
-    },
-    "expected_behavior": [
-        "Executes the git pull command in the specified local directory.",
-        "Handles errors gracefully and provides clear feedback to the user.",
-        "Updates the user with a summary of changes upon successful pull."
-    ]
+        "type": "object",
+        "properties": {
+            "folder_path": {"type": "string", "description": "The folder path to pull changes in"},
+            "rebase": {"type": "boolean", "description": "A boolean indicating whether to rebase the changes or not"},
+        },
+        "required": ["folder_path", "rebase"]
+    }
 })

@@ -1,6 +1,10 @@
 import os
 import sys
 
+# 'openai' or 'deepseek'
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
+
+
 # Load API credentials and model name from environment
 defined_api_key = os.getenv('OPENAI_API_KEY')
 if not defined_api_key:

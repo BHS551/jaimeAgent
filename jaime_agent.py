@@ -7,7 +7,10 @@ import time
 import json
 import logging
 import subprocess
+import threading
+import shlex
 from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -25,257 +28,203 @@ PROJECT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Ensure import path when run from Startup folder
 MODULE_DIR = os.path.expanduser("~/Documents/loneProjects/JaimeAgent/scripts")
-if os.path.isdir(MODULE_DIR) and MODULE_DIR not in sys.path:
+if MODULE_DIR not in sys.path:
     sys.path.insert(0, MODULE_DIR)
 
 # Core imports for function-calling
 from client import handle_prompt_raw, handle_prompt
 from handlers.dispatch import dispatch_function
 
-# Configure core logging
+# Logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(PROJECT_DIR / "jaime_agent.log"),
+        logging.FileHandler(PROJECT_DIR / "jaime_agent.log", encoding="utf-8"),
         logging.StreamHandler(sys.stdout)
     ]
 )
-# Human-readable activity log
-ACTIVITY_LOG = PROJECT_DIR / "activity_log.txt"
-activity_handler = logging.FileHandler(ACTIVITY_LOG, encoding="utf-8")
+activity_handler = logging.FileHandler(PROJECT_DIR / "activity_log.txt", encoding="utf-8")
 activity_handler.setLevel(logging.INFO)
 activity_handler.setFormatter(
-    logging.Formatter("%(asctime)s → %(message)s", "%Y-%m-%d %H:%M:%S")
+    logging.Formatter("%(asctime)s -> %(message)s", "%Y-%m-%d %H:%M:%S")
 )
 logging.getLogger().addHandler(activity_handler)
 
-# Optional vector store client (stub)
+# Stub for vector search
 try:
     from vector_store import search_documents
 except ImportError:
     def search_documents(query, top_k=3):
         return []
 
-# Information-flow monitor
 info_flow_log = defaultdict(list)
-
 def monitor_information_flow(func: str, data: str):
     info_flow_log[func].append(data)
-    logging.debug(f"Flow: {func} => {data}")
+    logging.debug(f"Flow: {func} -> {data}")
 
-# Load and save tasks in JSON with steps
+# Task I/O
 
 def load_tasks() -> list[dict]:
     try:
         return json.loads(TASK_FILE.read_text(encoding='utf-8'))
     except FileNotFoundError:
-        logging.info("No tasks file found, starting with empty task list.")
+        logging.info("No tasks.json found, starting empty")
         return []
     except json.JSONDecodeError as e:
-        logging.error(f"Error parsing tasks.json: {e}")
+        logging.error(f"Failed parsing tasks.json: {e}")
         return []
 
 
 def save_tasks(tasks: list[dict]):
     try:
         TASK_FILE.write_text(json.dumps(tasks, indent=2), encoding='utf-8')
-        logging.info(f"Saved {len(tasks)} tasks to tasks.json")
+        logging.info(f"Tasks saved ({len(tasks)} remaining)")
     except Exception as e:
-        logging.error(f"Error saving tasks.json: {e}")
+        logging.error(f"Failed writing tasks.json: {e}")
 
-# Load reference docs
+# Document cache
 
+@lru_cache(maxsize=1)
 def load_reference_docs(objective: str) -> str:
-    docs = []
-    try:
-        docs = search_documents(objective)
-    except Exception:
-        logging.debug("Vector search failed")
-    content = []
-    loaded = set()
-    for doc in docs:
-        full = PROJECT_DIR / Path(os.path.expanduser(doc)).name
-        if full.exists() and full.suffix == '.txt':
+    parts = []
+    for doc in search_documents(objective):
+        full = PROJECT_DIR / Path(doc).name
+        if full.exists():
             try:
                 text = full.read_text(encoding='utf-8')
-                content.append(f"== {full.name} ==\n{text}")
+                parts.append(f"== {full.name} ==\n{text}")
                 monitor_information_flow("load_reference_docs", full.name)
-                loaded.add(full.name)
-            except Exception as e:
-                logging.error(f"Error loading {full}: {e}")
-    for txt in PROJECT_DIR.glob("*.txt"):
-        if txt.name in loaded or txt.name in {FEEDBACK_FILE.name, DECISION_IMPACT_FILE.name, ACTIVITY_LOG.name, 'jaime_agent.log'}:
-            continue
-        try:
-            text = txt.read_text(encoding='utf-8')
-            content.append(f"== {txt.name} ==\n{text}")
-            monitor_information_flow("load_reference_docs", txt.name)
-        except Exception as e:
-            logging.error(f"Error loading {txt}: {e}")
-    return "\n\n".join(content)
+            except Exception:
+                logging.error(f"Error reading {full}")
+    return "\n\n".join(parts)
 
-# Self-awareness
-
-def evaluate_self_awareness() -> str:
-    report = ["Self-Awareness Report:"]
-    report.append("1. Current Tasks and Steps:")
-    tasks = load_tasks()
-    for t in tasks:
-        cs = t.get('current_step', 0)
-        steps = t.get('steps', [])
-        report.append(f"- {t.get('id')} → step {cs}/{len(steps)}")
-    report.append("2. Information Flow Status: OK")
-    report.append("3. Insights loaded from docs.")
-    return "\n".join(report)
-
-# Git flow persistence
+# Git flows
 
 def load_flows() -> dict:
     if FLOWS_FILE.exists():
         try:
             return json.loads(FLOWS_FILE.read_text(encoding='utf-8'))
-        except Exception as e:
-            logging.error(f"Error loading flows: {e}")
+        except Exception:
+            logging.error("Failed loading git_flows.json")
     return {}
 
 
 def save_flows(flows: dict):
     try:
         FLOWS_FILE.write_text(json.dumps(flows, indent=2), encoding='utf-8')
-        logging.info("Git flows saved.")
-    except Exception as e:
-        logging.error(f"Error saving flows: {e}")
+        logging.info("Git flows saved")
+    except Exception:
+        logging.error("Failed writing git_flows.json")
 
-# Main loop
+# Handlers for CLI modes
+
+def handle_define_flow(args):
+    flows = load_flows()
+    flows[args.define_flow[0]] = [c.strip() for c in args.define_flow[1].split(';')]
+    save_flows(flows)
+    print(f"Defined flow '{args.define_flow[0]}' with {len(flows[args.define_flow[0]])} cmds")
+
+
+def handle_run_flow(args):
+    flows = load_flows()
+    name = args.run_flow
+    if name not in flows:
+        print(f"[!] Flow '{name}' not found.")
+        sys.exit(1)
+    for cmd in flows[name]:
+        logging.info(f"GIT FLOW {name}: {cmd}")
+        parts = shlex.split(cmd)
+        try:
+            out = subprocess.run(parts, cwd=PROJECT_DIR, check=True, capture_output=True, text=True)
+            print(out.stdout)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr)
+            sys.exit(1)
+    sys.exit(0)
+
+
+def handle_feedback(args):
+    FEEDBACK_FILE.write_text(args.feedback + '\n', encoding='utf-8')
+    print("[INFO] Feedback saved.")
+    sys.exit(0)
+
+
+def handle_self_awareness():
+    print(evaluate_self_awareness())
+    sys.exit(0)
+
+
+def handle_one_shot(args, ctx):
+    msg = handle_prompt_raw(args.prompt, ctx)
+    if getattr(msg, 'function_call', None):
+        print("⚠️ Function call skipped.")
+    else:
+        print(msg.content or '')
+    sys.exit(0)
+
+# Self-awareness logic
+
+def evaluate_self_awareness() -> str:
+    report = ['Self-Awareness Report:','1. Tasks:']
+    for t in load_tasks():
+        cs = t.get('current_step',0)
+        ls = len(t.get('steps',[]))
+        report.append(f"- {t['id']} -> {cs}/{ls}")
+    report.append('Status: OK')
+    return "\n".join(report)
+
+# Main auto-loop
+
+def run_auto_loop(ctx, interval):
+    tasks = load_tasks()
+    stop_event = threading.Event()
+    while not stop_event.wait(interval):
+        if not tasks:
+            print("No tasks. Add to tasks.json.")
+            break
+        task = tasks[0]
+        idx = task.get('current_step',0)
+        steps = task.get('steps',[])
+        if idx >= len(steps):
+            tasks.pop(0)
+            save_tasks(tasks)
+            continue
+        prompt = f"{load_reference_docs(task['id'])}\nTask {task['id']} step {idx+1}/{len(steps)}: {steps[idx]}"
+        resp = handle_prompt_raw(prompt, ctx)
+        if getattr(resp,'function_call',None):
+            result = dispatch_function(resp.function_call)
+            print(result)
+            if isinstance(result,str) and result.startswith('❌'):
+                logging.error(f"{task['id']} failed at step {idx+1}")
+                break
+            task['current_step'] = idx+1
+            save_tasks(tasks)
+        else:
+            print(resp.content or '')
+
+# Entry point
 
 def main():
-    parser = argparse.ArgumentParser(description="Jaime Agent CLI")
-    parser.add_argument("--prompt", "-p", help="Send a single prompt and exit")
-    parser.add_argument("--context-file", "-c", help="Path to prepend as context")
-    parser.add_argument("--interval", "-i", type=float, default=10.0, help="Loop interval seconds")
-    parser.add_argument("--define-flow", nargs=2, metavar=("NAME","CMDS"), help="Define a named git flow; CMDS is semicolon-separated commands")
-    parser.add_argument("--run-flow", help="Run a named git flow")
-    parser.add_argument("--self-awareness", "-sa", action="store_true", help="Generate self-awareness report")
-    parser.add_argument("--feedback", "-f", help="Provide feedback to the agent")
-    args = parser.parse_args()
-
-    # Load optional context
+    p = argparse.ArgumentParser()
+    p.add_argument('--prompt','-p')
+    p.add_argument('--context-file','-c')
+    p.add_argument('--interval','-i',type=float,default=10.0)
+    p.add_argument('--define-flow',nargs=2)
+    p.add_argument('--run-flow')
+    p.add_argument('--self-awareness','-sa',action='store_true')
+    p.add_argument('--feedback','-f')
+    args = p.parse_args()
     ctx = None
     if args.context_file:
-        try:
-            ctx = Path(os.path.expanduser(args.context_file)).read_text(encoding='utf-8')
-            logging.info(f"Context loaded from {args.context_file}")
-        except Exception as e:
-            logging.error(f"Error loading context: {e}")
-            sys.exit(1)
-
-    # Define a git flow
-    if args.define_flow:
-        name, cmds = args.define_flow
-        flows = load_flows()
-        flows[name] = [c.strip() for c in cmds.split(";") if c.strip()]
-        save_flows(flows)
-        print(f"Defined flow '{name}' with {len(flows[name])} commands.")
-        sys.exit(0)
-
-    # Run a git flow
-    if args.run_flow:
-        flows = load_flows()
-        if args.run_flow not in flows:
-            print(f"[!] Flow '{args.run_flow}' not found.")
-            sys.exit(1)
-        print(f"Running flow '{args.run_flow}':")
-        for cmd in flows[args.run_flow]:
-            logging.info(f"GIT FLOW '{args.run_flow}': executing: {cmd}")
-            activity_handler.emit(logging.LogRecord("git_flow", logging.INFO, '', 0, f"FLOW {args.run_flow}: {cmd}", None, None))
-            try:
-                res = subprocess.run(cmd, cwd=PROJECT_DIR, shell=True, check=True, capture_output=True, text=True)
-                print(res.stdout)
-                logging.info(f"GIT FLOW '{args.run_flow}': succeeded")
-                activity_handler.emit(logging.LogRecord("git_flow", logging.INFO, '', 0, f"DONE {cmd}", None, None))
-            except subprocess.CalledProcessError as e:
-                print(e.stderr)
-                logging.error(f"GIT FLOW '{args.run_flow}': failed {e}")
-                sys.exit(1)
-        sys.exit(0)
-
-    # Feedback mode
-    if args.feedback:
-        FEEDBACK_FILE.write_text(args.feedback + "\n", encoding='utf-8')
-        logging.info("User feedback appended.")
-        print("[INFO] Feedback received.")
-        sys.exit(0)
-
-    # Self-awareness mode
-    if args.self_awareness:
-        print(evaluate_self_awareness())
-        sys.exit(0)
-
-    # One-shot prompt mode
-    if args.prompt:
-        msg = handle_prompt_raw(args.prompt, ctx)
-        if getattr(msg, "function_call", None): print("⚠️ Function call skipped.")
-        else: print(msg.content or "")
-        sys.exit(0)
-
-    # Automatic loop
+        ctx = Path(args.context_file).read_text(encoding='utf-8')
+    if args.define_flow: handle_define_flow(args)
+    if args.run_flow:   handle_run_flow(args)
+    if args.feedback:   handle_feedback(args)
+    if args.self_awareness: handle_self_awareness()
+    if args.prompt:     handle_one_shot(args,ctx)
     print("Jaime Agent CLI - type 'exit' to quit.")
-    fallback_done = False
-    while True:
-        try:
-            tasks = load_tasks()
-            if tasks:
-                task = tasks[0]
-                step_idx = task.get("current_step", 0)
-                steps = task.get("steps", [])
-                if step_idx < len(steps):
-                    step_desc = steps[step_idx]
-                    cmd = f"""
-{load_reference_docs(task.get('id', ''))}
-You are working on task '{task['id']}', step {step_idx+1}/{len(steps)}:
-{step_desc}
+    run_auto_loop(ctx, args.interval)
 
-Choose one tool call to advance this step.
-"""
-                    msg = handle_prompt_raw(cmd, ctx)
-                    if getattr(msg, "function_call", None):
-                        name = msg.function_call.name
-                        raw = msg.function_call.arguments
-                        args_j = json.loads(raw) if isinstance(raw, str) else raw
-                        logging.info(f"PLANNING: {name} {args_j}")
-                        result = dispatch_function(msg.function_call)
-                        print(result)
-                        logging.info(f"DID: {name} → {result.strip()}")
-                        # mark step done
-                        task['current_step'] = step_idx + 1
-                        if task['current_step'] >= len(steps):
-                            tasks.pop(0)
-                        save_tasks(tasks)
-                        fallback_done = False
-                    else:
-                        txt = msg.content or ""
-                        if txt and '?' not in txt:
-                            print(txt)
-                else:
-                    # no steps left, drop task
-                    tasks.pop(0)
-                    save_tasks(tasks)
-            elif not fallback_done:
-                print(f"No tasks. Define tasks in {TASK_FILE} as JSON list of {{id,steps,current_step}}.")
-                fallback_done = True
-            else:
-                logging.warning("No tasks & fallback done. Resetting.")
-                fallback_done = False
-            time.sleep(args.interval)
-        except (KeyboardInterrupt, EOFError):
-            logging.info("Exiting.")
-            print("Goodbye!")
-            break
-        except Exception as e:
-            logging.error(f"Loop error: {e}")
-            print(f"[!] Loop error: {e}")
-            continue
-
-if __name__ == "__main__":
+if __name__=='__main__':
     main()
