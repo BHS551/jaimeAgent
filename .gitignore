@@ -2,3 +2,7 @@ __pycache__
 .env
 handlers.__pycache__
 *.pyc
+activity_log.txt
+jaime_agent.log
+session_memory.json
+tasks.json
