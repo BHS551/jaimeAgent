@@ -1,0 +1,23 @@
+# New Git Branch Creation Functionality
+
+## Function Name: create_git_branch
+
+### Description:
+The `create_git_branch` function will operate within a specified folder path (absolute path) to create a new branch in Git. This function will first check the current branch and then create the new branch based on the user's input.
+
+### Steps to Implement:
+1. **Receive Parameters**:
+   - `folder_path`: The absolute path of the Git repository where the branch will be created.
+   - `new_branch_name`: The name of the new branch to be created.
+
+2. **Change Directory**:
+   - Navigate to the specified `folder_path` to ensure Git commands operate in the correct context.
+
+3. **Check Current Branch**:
+   - Use a Git command to determine the active branch before creating a new one.
+
+4. **Create New Branch**:
+   - Implement a Git command to create the new branch based on `new_branch_name`.
+
+5. **Confirm Creation**:
+   - Verify that the new branch has been created successfully and log an appropriate success message.

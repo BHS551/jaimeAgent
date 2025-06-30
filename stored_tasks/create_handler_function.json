@@ -1,0 +1,16 @@
+[
+  {
+    "id": "create_handler_function_task",
+    "steps": [
+      "read folder in path ./",
+      "read folder in path ./handlers",
+      "analize the following info: 'the functionality is going to create a new branch in git on a provided absolute folder_path current branch' define the following info function_name the name of the function, file_content which is the content of the file containing python code to meet the requirements and a function_description which indicates what the code inside the file",
+      "create a new file in path ./handlers named '${function_name}.py' and the content with the file_content code",
+      "read the file in path ./handlers/${function_name}.py",
+      "verify the code to meet the requirements of the requested function handler in file ./handlers/${function_name}.py",
+      "modify the file in path ./handlers/${function_name}.py to meet the requirements of the function if needed, make sure you dont add code wrappers such as python```",
+      "modify the file ./function_schema.py to add the new function schema to the functions array with the provided function_name and description according to the provided info"
+    ],
+    "current_step": 0
+  }
+]
