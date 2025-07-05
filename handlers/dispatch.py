@@ -1,46 +1,38 @@
 # handlers/dispatch.py
+
 """
 Dynamic dispatcher that loads a handler module matching the function name
-and calls its `handle(**kwargs)`.
-
-* Accepts either an OpenAI FunctionCall object **or** a plain dict
-  { "name": str, "arguments": str|dict }.
-* Produces crystal-clear error messages to aid debugging.
+and invokes its `handle(**args)` entrypoint.
 """
-
-from __future__ import annotations
 
 import importlib
 import json
+import os
+import threading
+import shlex
+from collections import defaultdict
+from functools import lru_cache
+from pathlib import Path
+from dotenv import load_dotenv
 import types
-from typing import Any
+
+load_dotenv()
+
+PROJECT_DIR = Path(os.path.expanduser("~/Documents/loneProjects/JaimeAgent"))
+TASK_FILE = PROJECT_DIR / "tasks.json"
+FEEDBACK_FILE = PROJECT_DIR / "user_feedback.txt"
 
 
-def _parse_call(call: Any) -> tuple[str, dict]:
+def _parse_call(call: str):
     """
-    Normalise OpenAI FunctionCall or dict → (name, arguments_dict)
+    Given a JSON string `call`, parse out the function name and args.
+    Returns tuple: (name: str, args: dict)
     """
-    if hasattr(call, "name"):  # OpenAI FunctionCall
-        name = call.name
-        raw_args = call.arguments
-    else:  # assume plain dict
-        name = call["name"]
-        raw_args = call["arguments"]
-
-    if isinstance(raw_args, str):
-        try:
-            args = json.loads(raw_args) if raw_args else {}
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in arguments: {e}") from None
-    elif isinstance(raw_args, dict):
-        args = raw_args
-    else:
-        raise TypeError(f"Unexpected type for arguments: {type(raw_args)}")
-
-    return name, args
+    payload = json.loads(call)
+    return payload["name"], payload.get("arguments", {})
 
 
-def dispatch_function(call: Any) -> str:
+def dispatch_function(call: any) -> str:
     """
     Import handlers.<function_name> and invoke its `handle(**args)`.
 
@@ -49,23 +41,22 @@ def dispatch_function(call: Any) -> str:
     """
     name, args = _parse_call(call)
 
+    # Dynamically import the corresponding module
     try:
         module: types.ModuleType = importlib.import_module(f"handlers.{name}")
-    except ModuleNotFoundError as e:
-        return f"❌ No handler module found for function '{name}'. " \
-               f"Expected file: handlers/{name}.py – {e}"
-    except Exception as e:
-        return f"❌ Import error for handler '{name}': {e}"
+    except ImportError:
+        raise RuntimeError(f"Handler module for '{name}' not found")
 
     if not hasattr(module, "handle"):
-        return f"❌ Handler module '{name}' exists but has no `handle()` function."
+        raise RuntimeError(f"Handler '{name}' missing 'handle' entrypoint")
 
-    try:
-        result = module.handle(**args)
-    except TypeError as e:
-        return f"❌ Argument mismatch in handler '{name}': {e}"
-    except Exception as e:
-        return f"❌ Error inside handler '{name}': {e}"
+    # Execute the handler
+    result = module.handle(**args)
 
-    # Convert non-string returns to JSON strings so the LLM sees something usable
+    # 4) Memory persistence for save_memory
+    if name == "save_memory":
+        with open(PROJECT_DIR / "session_memory.json", "a", encoding="utf-8") as memf:
+            memf.write(json.dumps(args, ensure_ascii=False) + "\n")
+
+    # Return JSON string if needed
     return result if isinstance(result, str) else json.dumps(result, ensure_ascii=False)

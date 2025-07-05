@@ -17,148 +17,227 @@ FUNCTIONS = [
         "context": "write_file",
     },
     {
+        "name": "read_file",
+        "description": "Read the contents of a file or list a directory",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "File or directory path"}
+            },
+            "required": ["path"],
+        },
+        "context": "read_file",
+    },
+    {
         "name": "modify_file",
-        "description": "Append content to an existing file or create it, creating parent directories if needed",
+        "description": "Overwrite or create a file with the given content",
         "parameters": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "File path to modify/create (supports ~ for home)",
+                    "description": "File path to write (supports ~ for home)",
                 },
-                "content": {"type": "string", "description": "Content to append"},
+                "content": {"type": "string", "description": "New file content"},
             },
             "required": ["path", "content"],
         },
-        "context": "write_file",
     },
     {
-        "name": "read_file",
-        "description": "If the path is a file, read its content. If it is a directory, return a JSON list of files in it",
-        "parameters": {
-            "type": "object",
-            "properties": {"path": {"type": "string"}},
-            "required": ["path"],
-        },
-    },
-    {
-        "name": "smart_modify_file",
-        "description": "Read a file, apply high-level instructions via the LLM, and overwrite it",
+        "name": "append_json",
+        "description": "Append a JSON object to the end of session_memory.json",
         "parameters": {
             "type": "object",
             "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "File to update (supports ~ for home)",
-                },
-                "instructions": {
-                    "type": "string",
-                    "description": "Natural-language description of how to change the file",
-                },
+                "entry": {
+                    "type": "object",
+                    "description": "JSON-serializable object to append",
+                }
             },
-            "required": ["path", "instructions"],
+            "required": ["entry"],
+        },
+    },
+    {
+        "name": "create_git_branch",
+        "description": "Create a new git branch and check it out",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "branch_name": {
+                    "type": "string",
+                    "description": "Name of the new branch",
+                }
+            },
+            "required": ["branch_name"],
         },
     },
     {
         "name": "git_add",
-        "description": "Stage all changes in the specified folder for commit",
+        "description": "Stage files or folders in the nearest Git repository",
         "parameters": {
             "type": "object",
             "properties": {
-                "folder_path": {
-                    "type": "string",
-                    "description": "Path of the folder to stage changes",
+                "paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of file or directory paths to add",
                 }
             },
-            "required": ["folder_path"],
+            "required": ["paths"],
         },
     },
     {
         "name": "git_commit",
-        "description": "Commit staged changes to the local git repository",
+        "description": "Commit staged changes with a message",
         "parameters": {
             "type": "object",
             "properties": {
-                "commit_message": {
-                    "type": "string",
-                    "description": "Commit message for the changes",
-                },
-                "folder_path": {
-                    "type": "string",
-                    "description": "The folder path to commit changes from",
-                },
+                "message": {"type": "string", "description": "Commit message"}
             },
-            "required": ["commit_message", "folder_path"],
-        },
-    },
-    {
-        "name": "git_push",
-        "description": "Handles the git push event.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "folder_path": {
-                    "type": "string",
-                    "description": "The folder path to push changes from",
-                },
-            },
-            "required": ["folder_path"],
+            "required": ["message"],
         },
     },
     {
         "name": "git_diff",
-        "description": "Show git diff between local changes and the remote HEAD for the current branch",
+        "description": "Show diff between local and remote for the current branch",
         "parameters": {
             "type": "object",
             "properties": {
                 "folder_path": {
                     "type": "string",
-                    "description": "Path of the Git repository to diff",
+                    "description": "Repository root folder",
                 }
             },
             "required": ["folder_path"],
         },
     },
 ]
-# New function schema for the git pull functionality
+
+# 1) Plan & Confirm
+FUNCTIONS.extend(
+    [
+        {
+            "name": "outline_plan",
+            "description": "Generate a high-level plan of steps before modifying code",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "context": {
+                        "type": "string",
+                        "description": "Summarized project context or relevant code snippets",
+                    },
+                    "task_description": {
+                        "type": "string",
+                        "description": "The user’s natural-language task description",
+                    },
+                },
+                "required": ["context", "task_description"],
+            },
+        },
+        {
+            "name": "confirm_plan",
+            "description": "Ask user to confirm or refine an outlined plan",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "plan": {
+                        "type": "string",
+                        "description": "The textual plan steps returned by outline_plan",
+                    }
+                },
+                "required": ["plan"],
+            },
+        },
+    ]
+)
+
+# 2) Semantic search retrieval
 FUNCTIONS.append(
     {
-        "name": "git_pull",
-        "description": "Handles the git pull operation to fetch updates from a remote repository",
+        "name": "semantic_search",
+        "description": "Retrieve top-k relevant code snippets from the indexed repo",
         "parameters": {
             "type": "object",
             "properties": {
-                "folder_path": {
-                    "type": "string",
-                    "description": "The folder path to pull changes in",
-                },
-                "rebase": {
-                    "type": "boolean",
-                    "description": "A boolean indicating whether to rebase the changes or not",
+                "query": {"type": "string", "description": "Search query"},
+                "top_k": {
+                    "type": "integer",
+                    "description": "Number of snippets to retrieve",
                 },
             },
-            "required": ["folder_path", "rebase"],
+            "required": ["query"],
         },
     }
 )
-# New function schema for the git checkout functionality
-FUNCTIONS.append(
-    {
-        "name": "create_git_branch",
-        "description": "The create_git_branch function will operate within a specified folder path (absolute path) to create a new branch in Git. This function will first check the current branch and then create the new branch based on the user's input.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "folder_path": {
-                    "type": "string",
-                    "description": "The folder path to pull changes in",
+
+# 3) Post-change validation
+FUNCTIONS.extend(
+    [
+        {
+            "name": "run_tests",
+            "description": "Run the project’s test suite and return pass/fail and any errors",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "folder_path": {
+                        "type": "string",
+                        "description": "Path to the project root for running tests",
+                    }
                 },
-                "branch_name": {
-                    "type": "string",
-                    "description": "The name of the new branch to create",
-                },
+                "required": ["folder_path"],
             },
-            "required": ["folder_path", "branch_name"],
         },
-    }
+        {
+            "name": "run_linter",
+            "description": "Run linter (e.g. flake8, eslint) and return any findings",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "folder_path": {
+                        "type": "string",
+                        "description": "Path to the project root for linting",
+                    }
+                },
+                "required": ["folder_path"],
+            },
+        },
+    ]
+)
+
+# 4) Memory store for intermediate facts
+FUNCTIONS.extend(
+    [
+        {
+            "name": "save_memory",
+            "description": "Persist an intermediate fact or key/value pair for later retrieval",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Identifier for the memory entry",
+                    },
+                    "value": {
+                        "type": "object",
+                        "description": "Arbitrary JSON-serializable value",
+                    },
+                },
+                "required": ["key", "value"],
+            },
+        },
+        {
+            "name": "load_memory",
+            "description": "Retrieve a previously saved value from memory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Identifier for the memory entry",
+                    }
+                },
+                "required": ["key"],
+            },
+        },
+    ]
 )

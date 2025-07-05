@@ -1,0 +1,47 @@
+[
+  {
+    "id": "self_awareness_check", // 1) Make Jaime introspect his own task progress.
+    "steps": [
+      "Call the `evaluate_self_awareness` function and return its report.",
+      "Parse the report, note any missing or stalled tasks.",
+      "Summarize in natural language what self-awareness gaps exist."
+    ]
+  },
+  {
+    "id": "semantic_search_validation", // 2) Force Jaime to validate his semantic-search.
+    "steps": [
+      "Use `semantic_search` on the query “where is function X defined?”",
+      "Load the file snippet you retrieved and check that it actually contains “def X”.",
+      "If it doesn’t, rerun `semantic_search` with a modified query (e.g. include module name).",
+      "Save in memory which query produced the correct hit."
+    ]
+  },
+  {
+    "id": "plan_confirm_roundtrip", // 3) Exercise the plan/confirm loop end-to-end.
+    "steps": [
+      "Given the user request “Add logging to all database calls,” invoke `outline_plan`.",
+      "Use `confirm_plan` to echo back that plan.",
+      "Simulate a user “approve” by storing the confirmed plan in memory via `save_memory`.",
+      "Load it again with `load_memory` and verify it matches."
+    ]
+  },
+  {
+    "id": "modify_and_validate", // 4) Practice code modification + validation cycle.
+    "steps": [
+      "Read a small file (e.g. `example.py`) via `read_file`.",
+      "Issue a `modify_file` to insert a dummy comment at the top.",
+      "Run `run_linter` on that folder and record its output.",
+      "Run `run_tests` and record pass/fail.",
+      "If either fails, revert the change and log the failure."
+    ]
+  },
+  {
+    "id": "memory_driven_extraction", // 5) Chain memory → action → memory.
+    "steps": [
+      "Save a key/value via `save_memory` with key “latest_search” and value “def foo”",
+      "Later in the same flow, call `load_memory` on “latest_search”.",
+      "Use that value to do a fresh `semantic_search` for the function “foo”.",
+      "Store the search results back under “foo_snippet” via `save_memory`."
+    ]
+  }
+]
